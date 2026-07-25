@@ -194,6 +194,39 @@
     .section-title{font-size:var(--text-lg);font-weight:800;font-family:var(--font-heading);margin:0}
     .section-copy{margin:.35rem 0 0;color:var(--color-text-muted);font-size:var(--text-sm)}
     .rank-badge{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);background:var(--color-gold-soft);color:var(--color-gold);font-size:var(--text-xs);font-weight:800;font-family:var(--font-heading);border:1px solid color-mix(in srgb, var(--color-gold) 30%, transparent);margin-top:var(--space-2)}
+    
+    .screenshot-preview{width:100%;max-width:200px;border-radius:var(--radius-md);border:2px dashed var(--color-border);margin-top:var(--space-3);overflow:hidden;position:relative;background:var(--color-surface-2);display:none}
+    .screenshot-preview img{width:100%;height:auto;display:block}
+    .screenshot-preview .remove-screenshot{position:absolute;top:var(--space-2);right:var(--space-2);width:28px;height:28px;border-radius:50%;background:var(--color-danger);color:white;border:none;font-size:var(--text-sm);font-weight:800;display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow-sm)}
+    .screenshot-preview .remove-screenshot:hover{background:color-mix(in srgb, var(--color-danger) 80%, black)}
+    .screenshot-thumb{width:40px;height:40px;border-radius:var(--radius-sm);object-fit:cover;border:1px solid var(--color-border);cursor:pointer;transition:transform var(--transition)}
+    .screenshot-thumb:hover{transform:scale(2);z-index:10;position:relative;box-shadow:var(--shadow-md)}
+    .screenshot-row{display:flex;align-items:center;gap:var(--space-2)}
+    .screenshot-badge{display:inline-flex;align-items:center;gap:var(--space-1);padding:.2rem .5rem;border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:800;font-family:var(--font-heading);background:var(--color-success-soft);color:var(--color-success)}
+    .upload-area{border:2px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-5);text-align:center;background:var(--color-surface-2);transition:all var(--transition);cursor:pointer;margin-top:var(--space-3)}
+    .upload-area:hover{border-color:var(--color-primary);background:var(--color-primary-soft)}
+    .upload-area.has-file{border-color:var(--color-success);background:var(--color-success-soft)}
+    .upload-area input[type="file"]{display:none}
+    .upload-icon{font-size:1.5rem;margin-bottom:var(--space-2)}
+    .upload-text{font-size:var(--text-sm);color:var(--color-text-muted);font-weight:600}
+    .upload-hint{font-size:var(--text-xs);color:var(--color-text-faint);margin-top:var(--space-1)}
+
+    
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:var(--space-4)}
+    .modal-overlay.show{display:flex}
+    .modal{max-width:520px;width:100%;max-height:90dvh;overflow:auto;background:var(--color-surface);border-radius:var(--radius-xl);border:1px solid var(--color-border);box-shadow:var(--shadow-md);padding:var(--space-5);animation:slideIn 200ms ease-out}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4)}
+    .modal-title{font-size:var(--text-lg);font-weight:800;font-family:var(--font-heading)}
+    .modal-close{width:36px;height:36px;border-radius:var(--radius-full);background:var(--color-surface-2);border:1px solid var(--color-border);display:grid;place-items:center;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer}
+    .modal-close:hover{background:var(--color-danger-soft);color:var(--color-danger)}
+    .edit-actions{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-top:var(--space-4)}
+    .edit-actions .btn{width:100%}
+    .btn-edit{width:32px;height:32px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary);border:none;display:inline-grid;place-items:center;font-size:var(--text-sm);font-weight:800;cursor:pointer;transition:all var(--transition)}
+    .btn-edit:hover{background:var(--color-primary);color:white}
+    .btn-delete-row{width:32px;height:32px;border-radius:var(--radius-md);background:var(--color-danger-soft);color:var(--color-danger);border:none;display:inline-grid;place-items:center;font-size:var(--text-sm);font-weight:800;cursor:pointer;transition:all var(--transition)}
+    .btn-delete-row:hover{background:var(--color-danger);color:white}
+    .action-cell{display:flex;gap:var(--space-2);align-items:center}
+
     @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .pulse-soft{animation:pulse-soft 2s ease-in-out infinite}
     @keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
@@ -427,6 +460,21 @@
             <textarea id="notes" name="notes" placeholder="Example: stock purchase, customer transfer, personal item"></textarea>
             <span class="hint">Optional, but helpful for memory support. Be specific!</span>
           </div>
+          <div class="field" id="screenshotField">
+            <label>Receipt Screenshot</label>
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('screenshotInput').click()">
+              <input type="file" id="screenshotInput" accept="image/*" capture="environment" />
+              <div class="upload-icon" id="uploadIcon">📷</div>
+              <div class="upload-text" id="uploadText">Tap to upload screenshot</div>
+              <div class="upload-hint">Bank transfer, receipt, or proof of payment</div>
+            </div>
+            <div class="screenshot-preview" id="screenshotPreview">
+              <img id="screenshotImg" src="" alt="Screenshot preview" />
+              <button type="button" class="remove-screenshot" onclick="removeScreenshot(event)" title="Remove screenshot">×</button>
+            </div>
+            <span class="hint" id="screenshotHint" style="color:var(--color-success);font-weight:700;display:none;">+5 XP bonus for attaching proof!</span>
+          </div>
+
           <div class="helper-box" id="helperText">This will record money your sister credited and add it to the running balance.</div>
           <button class="btn btn-primary" type="submit">Save Entry (+10 XP)</button>
           <div class="status" id="statusMessage" aria-live="polite"></div>
@@ -465,11 +513,11 @@
           <table>
             <thead>
               <tr>
-                <th>Date</th><th>Type</th><th>Bank</th><th>Amount</th><th>Account Bal</th><th>Total Bal</th><th>Notes</th>
+                <th>Date</th><th>Type</th><th>Bank</th><th>Amount</th><th>Account Bal</th><th>Total Bal</th><th>Notes</th><th>Proof</th><th>Actions</th>
               </tr>
             </thead>
             <tbody id="historyBody">
-              <tr><td colspan="7" class="empty">No entries yet.</td></tr>
+              <tr><td colspan="9" class="empty">No entries yet.</td></tr>
             </tbody>
           </table>
         </div>
@@ -525,7 +573,44 @@
       levelSubtitle: document.getElementById('levelSubtitle'),
       levelRing: document.getElementById('levelRing'),
       rankBadge: document.getElementById('rankBadge'),
-      achievementsGrid: document.getElementById('achievementsGrid')
+      achievementsGrid: document.getElementById('achievementsGrid'),
+      screenshotInput: document.getElementById('screenshotInput'),
+      screenshotPreview: document.getElementById('screenshotPreview'),
+      screenshotImg: document.getElementById('screenshotImg'),
+      uploadArea: document.getElementById('uploadArea'),
+      uploadIcon: document.getElementById('uploadIcon'),
+      uploadText: document.getElementById('uploadText'),
+      screenshotHint: document.getElementById('screenshotHint'),
+      editModalOverlay: document.getElementById('editModalOverlay'),
+      editForm: document.getElementById('editForm'),
+      editId: document.getElementById('editId'),
+      editDate: document.getElementById('editDate'),
+      editBank: document.getElementById('editBank'),
+      editKind: document.getElementById('editKind'),
+      editAmount: document.getElementById('editAmount'),
+      editNotes: document.getElementById('editNotes'),
+      editScreenshotInput: document.getElementById('editScreenshotInput'),
+      editScreenshotPreview: document.getElementById('editScreenshotPreview'),
+      editScreenshotImg: document.getElementById('editScreenshotImg'),
+      editUploadArea: document.getElementById('editUploadArea'),
+      editUploadIcon: document.getElementById('editUploadIcon'),
+      editUploadText: document.getElementById('editUploadText')
+    };
+
+    // Safe localStorage wrapper for restricted environments
+    const safeStorage = {
+      get: function(key, fallback) {
+        try { var v = localStorage.getItem(key); return v !== null ? v : fallback; }
+        catch(e) { return fallback; }
+      },
+      set: function(key, value) {
+        try { localStorage.setItem(key, value); }
+        catch(e) { /* silently fail */ }
+      },
+      remove: function(key) {
+        try { localStorage.removeItem(key); }
+        catch(e) { /* silently fail */ }
+      }
     };
 
     const currency = new Intl.NumberFormat('en-BN', { style: 'currency', currency: 'BND' });
@@ -592,22 +677,22 @@
     }
     function getUnlockedAchievements() {
       return ACHIEVEMENTS.filter(a => {
-        if (localStorage.getItem('sistrack-ach-' + a.id) === 'unlocked') return true;
+        if (safeStorage.get('sistrack-ach-' + a.id, null) === 'unlocked') return true;
         if (a.condition(state)) {
-          localStorage.setItem('sistrack-ach-' + a.id, 'unlocked');
+          safeStorage.set('sistrack-ach-' + a.id, 'unlocked');
           return true;
         }
         return false;
       });
     }
     function getStreak() {
-      return parseInt(localStorage.getItem('sistrack-streak') || '0');
+      return parseInt(safeStorage.get('sistrack-streak', '0') || '0');
     }
     function getXPFromStorage() {
-      return parseInt(localStorage.getItem('sistrack-total-xp') || '0');
+      return parseInt(safeStorage.get('sistrack-total-xp', '0') || '0');
     }
     function saveXPToStorage(xp) {
-      localStorage.setItem('sistrack-total-xp', String(xp));
+      safeStorage.set('sistrack-total-xp', String(xp));
     }
 
     let previousLevel = 1;
@@ -645,9 +730,9 @@
 
     function renderAchievements(unlockedCount) {
       els.achievementsGrid.innerHTML = ACHIEVEMENTS.map(a => {
-        const isUnlocked = localStorage.getItem('sistrack-ach-' + a.id) === 'unlocked' || a.condition(state);
-        if (isUnlocked && localStorage.getItem('sistrack-ach-' + a.id) !== 'unlocked') {
-          localStorage.setItem('sistrack-ach-' + a.id, 'unlocked');
+        const isUnlocked = safeStorage.get('sistrack-ach-' + a.id, null) === 'unlocked' || a.condition(state);
+        if (isUnlocked && safeStorage.get('sistrack-ach-' + a.id, null) !== 'unlocked') {
+          safeStorage.set('sistrack-ach-' + a.id, 'unlocked');
         }
         return '<div class="achievement-item ' + (isUnlocked ? 'unlocked' : '') + '"><span class="achievement-icon">' + a.icon + '</span><div class="achievement-name">' + a.name + '</div><div class="achievement-desc">' + a.desc + '</div><div class="achievement-xp">+' + a.xp + ' XP</div></div>';
       }).join('');
@@ -675,6 +760,103 @@
       ], { duration: 1200, easing: 'cubic-bezier(0.16,1,0.3,1)' }).onfinish = () => popup.remove();
     }
 
+
+    // ===================== EDIT MODAL =====================
+    let editingEntryId = null;
+    let editScreenshotData = null;
+
+    window.openEditModal = function(id) {
+      const entry = state.entries.find(function(e) { return e.id === id; });
+      if (!entry) return;
+      editingEntryId = id;
+      editScreenshotData = entry.screenshot || null;
+      els.editId.value = id;
+      els.editDate.value = entry.date;
+      els.editBank.value = entry.bankAccount || '';
+      els.editKind.value = entry.kind;
+      els.editAmount.value = entry.amount;
+      els.editNotes.value = entry.notes || '';
+      if (editScreenshotData) {
+        els.editScreenshotImg.src = editScreenshotData;
+        els.editScreenshotPreview.style.display = 'block';
+        els.editUploadArea.classList.add('has-file');
+        els.editUploadIcon.textContent = '✅';
+        els.editUploadText.textContent = 'Screenshot attached';
+      } else {
+        els.editScreenshotPreview.style.display = 'none';
+        els.editScreenshotImg.src = '';
+        els.editUploadArea.classList.remove('has-file');
+        els.editUploadIcon.textContent = '📷';
+        els.editUploadText.textContent = 'Tap to change screenshot';
+      }
+      els.editModalOverlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    };
+    window.closeEditModal = function() {
+      els.editModalOverlay.classList.remove('show');
+      document.body.style.overflow = '';
+      editingEntryId = null;
+      editScreenshotData = null;
+      els.editForm.reset();
+    };
+    window.removeEditScreenshot = function(e) {
+      if (e) e.stopPropagation();
+      editScreenshotData = null;
+      els.editScreenshotInput.value = '';
+      els.editScreenshotPreview.style.display = 'none';
+      els.editScreenshotImg.src = '';
+      els.editUploadArea.classList.remove('has-file');
+      els.editUploadIcon.textContent = '📷';
+      els.editUploadText.textContent = 'Tap to change screenshot';
+    };
+    window.deleteEntry = function(id) {
+      if (!confirm('Delete this entry? This cannot be undone.')) return;
+      state.entries = state.entries.filter(function(e) { return e.id !== id; });
+      render();
+      showToast('Entry deleted');
+    };
+    els.editScreenshotInput.addEventListener('change', function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { showToast('Please select an image file.'); return; }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        editScreenshotData = evt.target.result;
+        els.editScreenshotImg.src = editScreenshotData;
+        els.editScreenshotPreview.style.display = 'block';
+        els.editUploadArea.classList.add('has-file');
+        els.editUploadIcon.textContent = '✅';
+        els.editUploadText.textContent = file.name;
+      };
+      reader.readAsDataURL(file);
+    });
+    els.editForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (!editingEntryId) return;
+      const entry = state.entries.find(function(e) { return e.id === editingEntryId; });
+      if (!entry) return;
+      const newDate = els.editDate.value;
+      const newAmount = Number(els.editAmount.value);
+      if (!newDate || !(newAmount > 0)) { showToast('Please enter a valid date and amount.'); return; }
+      entry.date = newDate;
+      entry.bankAccount = els.editBank.value;
+      entry.kind = els.editKind.value;
+      entry.amount = newAmount;
+      entry.notes = els.editNotes.value.trim();
+      entry.direction = entry.kind === 'debit' ? 'out' : 'in';
+      entry.creditSource = entry.kind === 'credit-customer' ? (entry.creditSource || 'Other credit') : '';
+      if (editScreenshotData !== undefined) {
+        entry.screenshot = editScreenshotData;
+        entry.screenshotBonus = editScreenshotData ? SCREENSHOT_BONUS_XP : 0;
+      }
+      render();
+      closeEditModal();
+      showToast('Entry updated!');
+    });
+    els.editModalOverlay.addEventListener('click', function(e) {
+      if (e.target === els.editModalOverlay) closeEditModal();
+    });
+
     // ===================== ORIGINAL HELPERS =====================
     function showToast(msg, duration) {
       duration = duration || 2500;
@@ -693,7 +875,7 @@
     function setTheme() {
       const root = document.documentElement;
       let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      const savedTheme = localStorage.getItem('sistrack-theme');
+      const savedTheme = safeStorage.get('sistrack-theme', null);
       if (savedTheme) theme = savedTheme;
       root.setAttribute('data-theme', theme);
       const btn = document.querySelector('[data-theme-toggle]');
@@ -703,7 +885,7 @@
       btn.onclick = function() {
         theme = theme === 'dark' ? 'light' : 'dark';
         root.setAttribute('data-theme', theme);
-        localStorage.setItem('sistrack-theme', theme);
+        safeStorage.set('sistrack-theme', theme);
         btn.innerHTML = theme === 'dark'
           ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
           : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
@@ -726,6 +908,40 @@
       else if (isDebit) els.helperText.textContent = 'This records money taken out for stock or personal items and subtracts it from the running balance.';
       else els.helperText.textContent = 'This records money credited back to the balance, including Baiduri customer payments or purchases by you, friends, or customers.';
     }
+
+
+    // ===================== SCREENSHOT UPLOAD =====================
+    let currentScreenshot = null;
+    const SCREENSHOT_BONUS_XP = 5;
+
+    els.screenshotInput.addEventListener('change', function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { setStatus('Please select an image file.', 'error'); return; }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        currentScreenshot = evt.target.result;
+        els.screenshotImg.src = currentScreenshot;
+        els.screenshotPreview.style.display = 'block';
+        els.uploadArea.classList.add('has-file');
+        els.uploadIcon.textContent = '✅';
+        els.uploadText.textContent = file.name;
+        els.screenshotHint.style.display = 'block';
+        setStatus('Screenshot attached! +' + SCREENSHOT_BONUS_XP + ' XP bonus on save.', 'success');
+      };
+      reader.readAsDataURL(file);
+    });
+    window.removeScreenshot = function(e) {
+      if (e) e.stopPropagation();
+      currentScreenshot = null;
+      els.screenshotInput.value = '';
+      els.screenshotPreview.style.display = 'none';
+      els.screenshotImg.src = '';
+      els.uploadArea.classList.remove('has-file');
+      els.uploadIcon.textContent = '📷';
+      els.uploadText.textContent = 'Tap to upload screenshot';
+      els.screenshotHint.style.display = 'none';
+    };
 
     function calculateBalances() {
       let totalBal = 0, totalCred = 0, totalDeb = 0;
@@ -773,7 +989,7 @@
       else if (state.currentFilter === 'Baiduri') rows = rows.filter(function(r) { return r.bankAccount === 'Baiduri'; });
       else if (state.currentFilter === 'credit') rows = rows.filter(function(r) { return r.direction === 'in'; });
       else if (state.currentFilter === 'debit') rows = rows.filter(function(r) { return r.direction === 'out'; });
-      if (!rows.length) { els.historyBody.innerHTML = '<tr><td colspan="7" class="empty">No entries match this filter.</td></tr>'; return; }
+      if (!rows.length) { els.historyBody.innerHTML = '<tr><td colspan="9" class="empty">No entries match this filter.</td></tr>'; return; }
       els.historyBody.innerHTML = rows.map(function(entry, index) {
         const typeLabel = entry.kind === 'credit-sister' ? 'Sister credit' : entry.kind === 'debit' ? 'Debit' : 'Other credit';
         const bankClass = entry.bankAccount === 'BIBD' ? 'bibd' : entry.bankAccount === 'Baiduri' ? 'baiduri' : '';
@@ -782,9 +998,11 @@
         const bankLabel = entry.bankAccount || '—';
         const accountBal = entry.accountRunningBalance !== null ? fmt(entry.accountRunningBalance) : '—';
         const totalBalRow = fmt(entry.totalRunningBalance);
-        return '<tr class="slide-in" style="animation-delay:' + Math.min(index * 30, 300) + 'ms"><td>' + escapeHtml(entry.date) + '</td><td><span class="chip ' + (entry.direction === 'in' ? 'credit' : 'debit') + '">' + typeLabel + '</span></td><td><span class="chip ' + bankClass + '">' + bankLabel + '</span></td><td class="' + amountClass + '">' + sign + fmt(entry.amount) + '</td><td class="running">' + accountBal + '</td><td class="running">' + totalBalRow + '</td><td>' + escapeHtml(entry.notes || '—').replace(/\n/g, '<br>') + '</td></tr>';
+        const screenshotCell = entry.screenshot ? '<td><span class="screenshot-row"><img src="' + entry.screenshot + '" class="screenshot-thumb" alt="Proof" onclick="event.stopPropagation();window.open(this.src)"/><span class="screenshot-badge">📷 +' + (entry.screenshotBonus || 5) + ' XP</span></span></td>' : '<td>—</td>';
+        const actionsCell = '<td class="action-cell"><button type="button" class="btn-edit" onclick="openEditModal(\'' + entry.id + '\')" title="Edit">✎</button><button type="button" class="btn-delete-row" onclick="deleteEntry(\'' + entry.id + '\')" title="Delete">🗑</button></td>';
+        return '<tr class="slide-in" style="animation-delay:' + Math.min(index * 30, 300) + 'ms"><td>' + escapeHtml(entry.date) + '</td><td><span class="chip ' + (entry.direction === 'in' ? 'credit' : 'debit') + '">' + typeLabel + '</span></td><td><span class="chip ' + bankClass + '">' + bankLabel + '</span></td><td class="' + amountClass + '">' + sign + fmt(entry.amount) + '</td><td class="running">' + accountBal + '</td><td class="running">' + totalBalRow + '</td><td>' + escapeHtml(entry.notes || '—').replace(/\n/g, '<br>') + '</td>' + screenshotCell + actionsCell + '</tr>';
       }).join('');
-      renderGamification();
+      try { renderGamification(); } catch(e) { console && console.log && console.log('Gamification error:', e); }
     }
 
     function filterByBank(bank) {
@@ -815,6 +1033,7 @@
       els.creditSource.value = 'Customer purchase through Baiduri';
       setStatus('Entry saved! +10 XP', 'success');
       if (state.currentKind !== 'credit-customer') els.bankAccount.value = '';
+      removeScreenshot();
       updateStreak();
     }
     els.segmentedButtons.forEach(function(btn) { btn.addEventListener('click', function() { updateKind(btn.dataset.kind); }); });
@@ -827,13 +1046,19 @@
       const creditSource = els.creditSource.value;
       if (!date || !(amount > 0)) { setStatus('Please enter a valid date and amount.', 'error'); return; }
       if ((state.currentKind === 'credit-sister' || state.currentKind === 'debit') && !bankAccount) { setStatus('Please choose BIBD or Baiduri.', 'error'); return; }
-      state.entries.push({ id: crypto.randomUUID(), kind: state.currentKind, date: date, bankAccount: state.currentKind === 'credit-customer' ? '' : bankAccount, creditSource: state.currentKind === 'credit-customer' ? creditSource : '', amount: amount, notes: notes, direction: state.currentKind === 'debit' ? 'out' : 'in', createdAt: Date.now() });
-      render(); resetForm(); showToast('Entry saved! +10 XP'); triggerConfetti();
+      const entryData = { id: crypto.randomUUID(), kind: state.currentKind, date: date, bankAccount: state.currentKind === 'credit-customer' ? '' : bankAccount, creditSource: state.currentKind === 'credit-customer' ? creditSource : '', amount: amount, notes: notes, direction: state.currentKind === 'debit' ? 'out' : 'in', createdAt: Date.now(), screenshot: currentScreenshot, screenshotBonus: currentScreenshot ? SCREENSHOT_BONUS_XP : 0 };
+      state.entries.push(entryData);
+      render(); resetForm();
+      let xpMsg = 'Entry saved! +10 XP';
+      let totalXpGain = 10;
+      if (currentScreenshot) { xpMsg += ' +' + SCREENSHOT_BONUS_XP + ' XP (screenshot)'; totalXpGain += SCREENSHOT_BONUS_XP; }
+      showToast(xpMsg);
+      triggerConfetti();
       const rect = els.entryForm.querySelector('button[type="submit"]').getBoundingClientRect();
-      showXPPopup(10, rect.left + rect.width/2, rect.top);
+      showXPPopup(totalXpGain, rect.left + rect.width/2, rect.top);
     });
 
-    function getExportData() { return { exportedAt: new Date().toISOString(), version: 3, entries: state.entries, gamification: { totalXP: calculateTotalXP().total, streak: getStreak(), unlockedAchievements: ACHIEVEMENTS.filter(a => localStorage.getItem('sistrack-ach-' + a.id) === 'unlocked').map(a => a.id) } }; }
+    function getExportData() { return { exportedAt: new Date().toISOString(), version: 3, entries: state.entries, gamification: { totalXP: calculateTotalXP().total, streak: getStreak(), unlockedAchievements: ACHIEVEMENTS.filter(a => safeStorage.get('sistrack-ach-' + a.id, null) === 'unlocked').map(a => a.id) } }; }
     function downloadJson(filename, data) {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -856,7 +1081,7 @@
       e.target.value = '';
     });
     function importEntries(entries) {
-      state.entries = entries.map(function(entry, index) { return { id: entry.id || crypto.randomUUID(), kind: entry.kind || 'credit-customer', date: entry.date || today(), bankAccount: entry.bankAccount || '', creditSource: entry.creditSource || '', amount: Number(entry.amount || 0), notes: entry.notes || '', direction: entry.direction === 'out' ? 'out' : 'in', createdAt: Number(entry.createdAt || Date.now() + index) }; }).filter(function(entry) { return entry.amount > 0; });
+      state.entries = entries.map(function(entry, index) { return { id: entry.id || crypto.randomUUID(), kind: entry.kind || 'credit-customer', date: entry.date || today(), bankAccount: entry.bankAccount || '', creditSource: entry.creditSource || '', amount: Number(entry.amount || 0), notes: entry.notes || '', direction: entry.direction === 'out' ? 'out' : 'in', createdAt: Number(entry.createdAt || Date.now() + index), screenshot: entry.screenshot || null, screenshotBonus: entry.screenshotBonus || 0 }; }).filter(function(entry) { return entry.amount > 0; });
       render();
     }
 
@@ -905,7 +1130,7 @@
         if (parsed.gamification) {
           if (parsed.gamification.totalXP) saveXPToStorage(parsed.gamification.totalXP);
           if (parsed.gamification.unlockedAchievements) {
-            parsed.gamification.unlockedAchievements.forEach(id => localStorage.setItem('sistrack-ach-' + id, 'unlocked'));
+            parsed.gamification.unlockedAchievements.forEach(id => safeStorage.set('sistrack-ach-' + id, 'unlocked'));
           }
         }
         state.gistConnected = true; state.lastSync = new Date().toISOString();
@@ -953,15 +1178,15 @@
 
     function updateStreak() {
       const todayStr = new Date().toDateString();
-      const lastLog = localStorage.getItem('sistrack-lastlog');
-      let streak = parseInt(localStorage.getItem('sistrack-streak') || '0');
+      const lastLog = safeStorage.get('sistrack-lastlog', null);
+      let streak = parseInt(safeStorage.get('sistrack-streak', '0') || '0');
       if (lastLog !== todayStr) {
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
         if (lastLog === yesterday.toDateString()) streak++;
         else if (!lastLog) streak = 1;
         else streak = 1;
-        localStorage.setItem('sistrack-streak', String(streak));
-        localStorage.setItem('sistrack-lastlog', todayStr);
+        safeStorage.set('sistrack-streak', String(streak));
+        safeStorage.set('sistrack-lastlog', todayStr);
       }
       els.streakBadge.textContent = streak + ' day streak';
       els.adhdPrompt.style.display = (lastLog !== todayStr && state.entries.length > 0) ? 'block' : 'none';
@@ -982,22 +1207,29 @@
     }
 
     function init() {
-      setTheme(); updateKind('credit-sister'); renderInspiration();
-      importEntries(SEEDED_DATA.entries);
-      const savedToken = localStorage.getItem('sistrack-gist-token');
-      const savedGistId = localStorage.getItem('sistrack-gist-id');
-      if (savedToken) els.gistToken.value = savedToken;
-      if (savedGistId) els.gistId.value = savedGistId;
-      els.gistToken.addEventListener('change', function() { localStorage.setItem('sistrack-gist-token', els.gistToken.value); });
-      els.gistId.addEventListener('change', function() { localStorage.setItem('sistrack-gist-id', els.gistId.value); });
-      updateStreak();
-      setInterval(function() {
-        const lastLog = localStorage.getItem('sistrack-lastlog');
-        const todayStr = new Date().toDateString();
-        if (lastLog !== todayStr && state.entries.length > 0) els.adhdPrompt.style.display = 'block';
-      }, 60000);
-      showToast('Tracker loaded with your data!');
-      renderGamification();
+      try {
+        setTheme(); updateKind('credit-sister'); renderInspiration();
+        importEntries(SEEDED_DATA.entries);
+        if (state.entries.length === 0) {
+          setStatus('Data loaded: 0 entries. If this is wrong, try refreshing the page.', 'error');
+        }
+        const savedToken = safeStorage.get('sistrack-gist-token', null);
+        const savedGistId = safeStorage.get('sistrack-gist-id', null);
+        if (savedToken) els.gistToken.value = savedToken;
+        if (savedGistId) els.gistId.value = savedGistId;
+        els.gistToken.addEventListener('change', function() { safeStorage.set('sistrack-gist-token', els.gistToken.value); });
+        els.gistId.addEventListener('change', function() { safeStorage.set('sistrack-gist-id', els.gistId.value); });
+        updateStreak();
+        setInterval(function() {
+          const lastLog = safeStorage.get('sistrack-lastlog', null);
+          const todayStr = new Date().toDateString();
+          if (lastLog !== todayStr && state.entries.length > 0) els.adhdPrompt.style.display = 'block';
+        }, 60000);
+        showToast('Tracker loaded with ' + state.entries.length + ' entries!');
+        try { renderGamification(); } catch(e) {}
+      } catch(err) {
+        setStatus('Load error: ' + (err.message || err), 'error');
+      }
     }
     init();
   </script>
@@ -1015,5 +1247,65 @@
   }
 })();
 </script>
+
+  <div class="modal-overlay" id="editModalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Edit Entry</div>
+        <button type="button" class="modal-close" onclick="closeEditModal()" aria-label="Close">×</button>
+      </div>
+      <form id="editForm" class="form-grid">
+        <input type="hidden" id="editId" />
+        <div class="field">
+          <label for="editDate">Date</label>
+          <input id="editDate" type="date" required />
+        </div>
+        <div class="inline-grid">
+          <div class="field">
+            <label for="editBank">Bank account</label>
+            <select id="editBank">
+              <option value="">No bank</option>
+              <option value="BIBD">BIBD</option>
+              <option value="Baiduri">Baiduri</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editKind">Entry type</label>
+            <select id="editKind">
+              <option value="credit-sister">Sister credit</option>
+              <option value="debit">Debit</option>
+              <option value="credit-customer">Other credit</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="editAmount">Amount (BND)</label>
+          <input id="editAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" required />
+        </div>
+        <div class="field">
+          <label for="editNotes">Notes</label>
+          <textarea id="editNotes" rows="3"></textarea>
+        </div>
+        <div class="field" id="editScreenshotField">
+          <label>Receipt Screenshot</label>
+          <div class="upload-area" id="editUploadArea" onclick="document.getElementById('editScreenshotInput').click()">
+            <input type="file" id="editScreenshotInput" accept="image/*" capture="environment" />
+            <div class="upload-icon" id="editUploadIcon">📷</div>
+            <div class="upload-text" id="editUploadText">Tap to change screenshot</div>
+            <div class="upload-hint">Leave empty to keep current</div>
+          </div>
+          <div class="screenshot-preview" id="editScreenshotPreview" style="display:none;">
+            <img id="editScreenshotImg" src="" alt="Screenshot preview" />
+            <button type="button" class="remove-screenshot" onclick="removeEditScreenshot(event)" title="Remove screenshot">×</button>
+          </div>
+        </div>
+        <div class="edit-actions">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </body>
 </html>

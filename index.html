@@ -415,6 +415,7 @@ tbody tr:hover{background:color-mix(in srgb, var(--color-primary-soft) 30%, tran
       <div class="toolbar">
         <button class="btn btn-secondary" type="button" id="copyJsonBtn">Copy JSON</button>
         <button class="btn btn-secondary" type="button" id="downloadSampleBtn">Sample JSON</button>
+        <button class="btn btn-secondary" type="button" id="resetToSeedBtn">Reset to Seed Data</button>
         <button class="btn btn-danger" type="button" id="clearAllBtn">Clear All</button>
       </div>
       <p class="footer-note"><strong>Pro tip:</strong> Always save to Gist before clearing!</p>
@@ -802,6 +803,7 @@ els.entryForm.addEventListener('submit', function(e) {
   const entryData = { id: crypto.randomUUID(), kind: state.currentKind, date: date, bankAccount: state.currentKind === 'credit-customer' ? '' : bankAccount, creditSource: state.currentKind === 'credit-customer' ? creditSource : '', amount: amount, notes: notes, direction: state.currentKind === 'debit' ? 'out' : 'in', createdAt: Date.now(), screenshot: currentScreenshot, screenshotBonus: currentScreenshot ? SCREENSHOT_BONUS_XP : 0 };
   state.entries.push(entryData);
   render(); resetForm();
+  scheduleAutoGistSave();
   let xpMsg = 'Entry saved! +10 XP';
   let totalXpGain = 10;
   if (currentScreenshot) { xpMsg += ' +' + SCREENSHOT_BONUS_XP + ' XP (screenshot)'; totalXpGain += SCREENSHOT_BONUS_XP; }
@@ -888,6 +890,7 @@ function deleteEntry(id) {
   if (!confirm('Delete this entry? This cannot be undone.')) return;
   state.entries = state.entries.filter(function(e) { return e.id !== id; });
   render();
+  scheduleAutoGistSave();
   showToast('Entry deleted');
 }
 els.editScreenshotInput.addEventListener('change', function(e) {
@@ -925,6 +928,7 @@ els.editForm.addEventListener('submit', function(e) {
     entry.screenshotBonus = editScreenshotData ? SCREENSHOT_BONUS_XP : 0;
   }
   render();
+  scheduleAutoGistSave();
   closeEditModal();
   showToast('Entry updated!');
 });
@@ -946,11 +950,18 @@ document.getElementById('copyJsonBtn').addEventListener('click', async function(
 });
 document.getElementById('clearAllBtn').addEventListener('click', function() {
   if (!confirm('Clear ALL entries? This cannot be undone unless you have a Gist backup!')) return;
-  state.entries = []; render(); setStatus('All entries cleared.', 'success'); showToast('All entries cleared');
+  state.entries = []; render(); scheduleAutoGistSave(); setStatus('All entries cleared.', 'success'); showToast('All entries cleared');
+});
+document.getElementById('resetToSeedBtn').addEventListener('click', function() {
+  if (!confirm('Reset to the built-in seed data? This replaces your current ' + state.entries.length + ' entries with the ' + SEEDED_DATA.entries.length + ' original seeded entries. This cannot be undone unless you have a Gist backup!')) return;
+  importEntries(SEEDED_DATA.entries);
+  scheduleAutoGistSave();
+  setStatus('Reset to seed data (' + state.entries.length + ' entries).', 'success');
+  showToast('Reset to seed data!');
 });
 document.getElementById('uploadJsonInput').addEventListener('change', async function(e) {
   const file = e.target.files && e.target.files[0]; if (!file) return;
-  try { const text = await file.text(); const parsed = JSON.parse(text); if (!Array.isArray(parsed.entries)) throw new Error('Invalid file'); importEntries(parsed.entries); setStatus('JSON imported successfully!', 'success'); showToast('JSON imported!'); }
+  try { const text = await file.text(); const parsed = JSON.parse(text); if (!Array.isArray(parsed.entries)) throw new Error('Invalid file'); importEntries(parsed.entries); scheduleAutoGistSave(); setStatus('JSON imported successfully!', 'success'); showToast('JSON imported!'); }
   catch { setStatus('That JSON file could not be imported.', 'error'); }
   e.target.value = '';
 });
@@ -964,18 +975,19 @@ function updateGistStatus(msg, type) {
   const icon = type === 'connected' ? '✓' : type === 'syncing' ? '...' : type === 'error' ? '✗' : '○';
   els.gistStatus.innerHTML = '<span>' + icon + '</span> ' + msg;
 }
-async function saveToGist() {
+async function saveToGist(opts) {
+  const silent = !!(opts && opts.silent === true);
   const token = els.gistToken.value.trim();
   const gistId = els.gistId.value.trim();
   const filename = els.gistFilename.value.trim() || 'sisters-tracker-data.json';
-  if (!token) { updateGistStatus('Please enter a GitHub token first.', 'error'); return; }
+  if (!token) { if (!silent) updateGistStatus('Please enter a GitHub token first.', 'error'); return; }
 
   // Warn if opened from file://
   if (window.location.protocol === 'file:') {
     console.warn('Opened from file:// protocol. Some browsers block fetch() to external APIs. If save fails, try hosting on a local server or use a browser extension to disable CORS.');
   }
 
-  updateGistStatus('Saving to Gist...', 'syncing');
+  updateGistStatus(silent ? 'Auto-saving to Gist...' : 'Saving to Gist...', 'syncing');
   const content = JSON.stringify(getExportData(), null, 2);
   try {
     let response;
@@ -998,13 +1010,31 @@ async function saveToGist() {
     if (!gistId) els.gistId.value = data.id;
     state.gistConnected = true; state.lastSync = new Date().toISOString();
     safeStorage.set('sistrack-gist-id', data.id);
-    updateGistStatus('Saved! Gist ID: ' + data.id, 'connected'); showToast('Saved to Gist!'); triggerConfetti();
+    if (silent) {
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      updateGistStatus('Auto-saved at ' + timeStr + ' · Gist ID: ' + data.id, 'connected');
+    } else {
+      updateGistStatus('Saved! Gist ID: ' + data.id, 'connected'); showToast('Saved to Gist!'); triggerConfetti();
+    }
     try { renderGamification(); } catch(e) {}
   } catch (err) { 
     console.error('Gist save error:', err);
     updateGistStatus('Error: ' + err.message, 'error'); 
-    showToast('Gist save failed: ' + err.message); 
+    showToast((silent ? 'Auto-save to Gist failed: ' : 'Gist save failed: ') + err.message); 
   }
+}
+let autoGistSaveTimer = null;
+function scheduleAutoGistSave() {
+  const token = els.gistToken.value.trim();
+  const gistId = els.gistId.value.trim();
+  // Only auto-save once a Gist already exists (token + ID both set) so we never silently
+  // create a brand-new Gist on the user's behalf - that first save stays a manual action.
+  if (!token || !gistId) return;
+  if (autoGistSaveTimer) clearTimeout(autoGistSaveTimer);
+  autoGistSaveTimer = setTimeout(function() {
+    autoGistSaveTimer = null;
+    saveToGist({ silent: true });
+  }, 2500);
 }
 async function loadFromGist() {
   const token = els.gistToken.value.trim();

@@ -23,11 +23,12 @@
 <div class="quick"><button type="button" id="today">Today</button><button type="button" id="backup">Download JSON</button></div></section>
 <section class="panel"><div class="section"><b>Transactions</b><span class="sub" id="count"></span></div><div class="filter"><button class="active" data-filter="all">All</button><button data-filter="credit">Credits</button><button data-filter="debit">Debits</button><button data-filter="BIBD">BIBD</button><button data-filter="Baiduri">Baiduri</button></div><div id="list"></div></section>
 <section class="panel"><div class="section"><b>Month</b><span class="sub" id="monthLbl"></span></div><div class="sub" id="monthInfo"></div><button type="button" class="secondary" id="closeMonth" style="width:100%;margin-top:10px">Close month &amp; bring forward</button><button type="button" class="secondary" id="undoClose" style="width:100%;margin-top:8px">Undo last close</button><div id="past" style="margin-top:10px"></div></section>
-<section class="panel"><div class="section"><b>GitHub backup</b><span class="sub" id="ghState"></span></div><div class="sub">Saves a copy of your data to a GitHub repository after every change, with full history. Use a <b>private</b> repo. Classic tokens need the <b>repo</b> scope; fine-grained tokens need Contents: read &amp; write on that repo.</div>
-<div class="grid" style="margin-top:10px"><div class="full"><label>REPOSITORY (owner/name)</label><input id="ghRepo" placeholder="yourname/sisters-tracker-backup" autocapitalize="none" autocomplete="off" spellcheck="false"></div>
-<div class="full"><label>ACCESS TOKEN</label><input id="ghToken" type="password" autocomplete="off" placeholder="ghp_... or github_pat_..."></div>
-<div><label>BRANCH (optional)</label><input id="ghBranch" placeholder="default branch" autocapitalize="none" autocomplete="off"></div><div><label>FILE</label><input id="ghPath" placeholder="sisters-tracker.json" autocapitalize="none" autocomplete="off"></div>
+<section class="panel"><div class="section"><b>GitHub backup</b><span class="sub" id="ghState"></span></div><div class="sub">Saves a copy of your data to a <b>secret gist</b> in your GitHub account after every change, with full history. It is created for you, so there is no repository to set up. Use a classic token with only the <b>gist</b> scope. To use the backup on another device, enter the same token and the Gist ID. Secret gists are unlisted, not private: anyone with the link can read them.</div>
+<div class="grid" style="margin-top:10px"><div class="full"><label>ACCESS TOKEN</label><input id="ghToken" type="password" autocomplete="off" placeholder="ghp_..."></div>
+<div class="full"><label>GIST ID (created on first backup, paste it on another device)</label><div style="display:flex;gap:8px"><input id="ghId" placeholder="appears after the first backup" autocapitalize="none" autocomplete="off" spellcheck="false"><button type="button" class="secondary" id="ghCopy" style="padding:0 16px">Copy</button></div></div>
 <div class="full"><label style="display:flex;gap:8px;align-items:center;font-size:12px"><input id="ghAuto" type="checkbox" style="width:auto"> Back up automatically after every change</label></div></div>
+<details id="ghAdv" style="margin-top:10px"><summary class="sub" style="cursor:pointer">Advanced: back up to a repository instead</summary><div class="grid" style="margin-top:8px"><div class="full"><label>REPOSITORY (owner/name, leave empty to use a gist)</label><input id="ghRepo" placeholder="yourname/private-repo" autocapitalize="none" autocomplete="off" spellcheck="false"></div>
+<div><label>BRANCH (optional)</label><input id="ghBranch" placeholder="default branch" autocapitalize="none" autocomplete="off"></div><div><label>FILE</label><input id="ghPath" placeholder="sisters-tracker.json" autocapitalize="none" autocomplete="off"></div></div><div class="sub" style="margin-top:6px">Repository mode needs the <b>repo</b> scope (classic) or Contents: read &amp; write (fine-grained).</div></details>
 <div class="actions"><button type="button" class="secondary" id="ghSave">Save &amp; back up now</button><button type="button" class="secondary" id="ghRestore">Restore from GitHub</button><button type="button" class="secondary" id="ghOff" style="grid-column:1/-1">Disconnect &amp; forget token</button></div>
 <div class="sub" id="ghMsg" style="margin-top:8px"></div></section>
 <section class="panel"><div class="section"><b>Backup & recovery</b></div><div class="sub">Everything is saved locally. A JSON file is automatically downloaded after every add, edit, delete, or import.</div><div class="actions"><button class="secondary" id="export">Download latest JSON</button><label class="secondary" style="text-align:center">Import JSON<input id="import" type="file" accept=".json,application/json" hidden></label></div></section>
@@ -44,7 +45,7 @@ function nextMonth(m){let[y,mo]=m.split('-').map(Number);mo++;if(mo>12){mo=1;y++
 function monthLabel(m){const[y,mo]=m.split('-').map(Number);return new Date(y,mo-1,1).toLocaleString('en-GB',{month:'long',year:'numeric'})}
 function money(n){n=r2(n);return(n<0?'\u2212':'')+'BND '+Math.abs(n).toFixed(2)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function ask(msg,info){return new Promise(res=>{const m=$('mask');$('dlgMsg').textContent=msg;$('dlgNo').style.display=info?'none':'';m.hidden=false;const done=v=>{m.hidden=true;$('dlgYes').onclick=$('dlgNo').onclick=null;res(v)};$('dlgYes').onclick=()=>done(true);$('dlgNo').onclick=()=>done(false)})}
+function ask(msg,info,yes,no){return new Promise(res=>{const m=$('mask');$('dlgMsg').textContent=msg;$('dlgYes').textContent=yes||'OK';$('dlgNo').textContent=no||'Cancel';$('dlgNo').style.display=info?'none':'';m.hidden=false;const done=v=>{m.hidden=true;$('dlgYes').onclick=$('dlgNo').onclick=null;res(v)};$('dlgYes').onclick=()=>done(true);$('dlgNo').onclick=()=>done(false)})}
 const tell=msg=>ask(msg,true);
 //--LOGIC--
 function bal(opening,entries){const o={BIBD:+(opening||{}).BIBD||0,Baiduri:+(opening||{}).Baiduri||0};entries.forEach(e=>{if(e.bankAccount in o)o[e.bankAccount]+=e.direction==='in'?+e.amount:-e.amount});const out={BIBD:r2(o.BIBD),Baiduri:r2(o.Baiduri)};out.total=r2(out.BIBD+out.Baiduri);return out}
@@ -104,33 +105,49 @@ today.onclick=()=>date.value=localDate();backup.onclick=downloadJSON;$('export')
 $('import').onchange=e=>{let r=new FileReader();r.onload=async()=>{let res;try{res=normalize(JSON.parse(r.result),thisMonth())}catch{tell('Invalid tracker JSON');return}state=res.state;openId=null;save();if(res.notes.length)await tell(res.notes.join('\n'))};r.readAsText(e.target.files[0]);e.target.value=''};
 theme.onclick=()=>{let dark=document.documentElement.dataset.dark==='1';document.documentElement.dataset.dark=dark?'0':'1';document.documentElement.style.setProperty('--bg',dark?'#f6f5fb':'#15141b');document.documentElement.style.setProperty('--card',dark?'#fff':'#211f29');document.documentElement.style.setProperty('--ink',dark?'#24232c':'#f4f2fa')};
 
-const GH_KEY='sisters-tracker-gh';
+const GH_KEY='sisters-tracker-gh',GFILE='sisters-tracker.json';
 function ghCfg(){try{return JSON.parse(localStorage.getItem(GH_KEY))||{}}catch{return{}}}
 function ghSet(c){localStorage.setItem(GH_KEY,JSON.stringify(c))}
-function ghReady(c){return !!c.token&&/^[^\/\s]+\/[^\/\s]+$/.test(c.repo||'')}
+function ghMode(c){return(c.repo||'').trim()?'repo':'gist'}
+function ghReady(c){return !!c.token&&(ghMode(c)==='gist'||/^[^\/\s]+\/[^\/\s]+$/.test(c.repo))}
 function ghMsg(t,bad){$('ghMsg').textContent=t;$('ghMsg').style.color=bad?'var(--out)':''}
-function ghShow(){const c=ghCfg();$('ghRepo').value=c.repo||'';$('ghToken').value=c.token||'';$('ghBranch').value=c.branch||'';$('ghPath').value=c.path||'';$('ghAuto').checked=c.auto!==false;$('ghState').textContent=ghReady(c)?(c.auto!==false?'auto-backup on':'manual only'):'not set up';if(c.last&&ghReady(c))ghMsg('Last backup: '+new Date(c.last).toLocaleString())}
+function ghShow(){const c=ghCfg();$('ghRepo').value=c.repo||'';$('ghId').value=c.gistId||'';$('ghToken').value=c.token||'';$('ghBranch').value=c.branch||'';$('ghPath').value=c.path||'';$('ghAuto').checked=c.auto!==false;$('ghAdv').open=!!c.repo;$('ghState').textContent=ghReady(c)?(c.auto!==false?'auto-backup on':'manual only'):'not set up';if(c.last&&ghReady(c))ghMsg('Last backup: '+new Date(c.last).toLocaleString())}
 function enc(str){let bin='';new TextEncoder().encode(str).forEach(c=>bin+=String.fromCharCode(c));return btoa(bin)}
 function dec(b64){const bin=atob(b64.replace(/\s/g,''));const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder().decode(u)}
-function ghFetch(c,method,body){const path=(c.path||'sisters-tracker.json').split('/').map(encodeURIComponent).join('/');let url='https://api.github.com/repos/'+c.repo+'/contents/'+path;if(method==='GET'&&c.branch)url+='?ref='+encodeURIComponent(c.branch);return fetch(url,{method,cache:'no-store',headers:{'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},body:body?JSON.stringify(body):undefined})}
-async function ghErr(r){let m='';try{m=(await r.json()).message||''}catch{}return r.status===401?'GitHub rejected the token (wrong or expired).':r.status===403?'The token lacks permission. It needs Contents: read & write on this repo. '+m:r.status===404?'Repository or branch not found, or the token does not cover this repo.':'GitHub error '+r.status+'. '+m}
-async function ghPush(manual){const c=ghCfg();if(!ghReady(c)){if(manual)ghMsg('Enter the repository (owner/name) and token first.',1);return false}
-try{ghMsg('Backing up\u2026');let sha;const g=await ghFetch(c,'GET');if(g.ok)sha=(await g.json()).sha;else if(g.status!==404){ghMsg(await ghErr(g),1);return false}
-const body={message:'Backup '+state.currentMonth+' ('+state.entries.length+' entries this month)',content:enc(JSON.stringify(exportObj(),null,2)),sha};if(c.branch)body.branch=c.branch;
-const p=await ghFetch(c,'PUT',body);if(!p.ok){ghMsg(await ghErr(p),1);return false}
-c.last=new Date().toISOString();ghSet(c);ghMsg('Last backup: '+new Date(c.last).toLocaleString());return true}catch(e){ghMsg('Could not reach GitHub. Your data is still saved on this device.',1);return false}}
+function gh(c,method,url,body){return fetch('https://api.github.com'+url,{method,cache:'no-store',headers:{'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},body:body?JSON.stringify(body):undefined})}
+function repoUrl(c,get){return '/repos/'+c.repo+'/contents/'+(c.path||GFILE).split('/').map(encodeURIComponent).join('/')+(get&&c.branch?'?ref='+encodeURIComponent(c.branch):'')}
+async function ghErr(r,c){let m='';try{m=(await r.json()).message||''}catch{}const g=ghMode(c)==='gist';return r.status===401?'GitHub rejected the token (wrong or expired).':r.status===403?(g?'The token lacks permission. A classic token needs the gist scope. ':'The token lacks permission. It needs the repo scope (classic) or Contents: read & write. ')+m:r.status===404?(g?'Backup gist not found. Check the token.':'Repository or branch not found, or the token does not cover this repo.'):'GitHub error '+r.status+'. '+m}
+async function ghPush(manual){const c=ghCfg();if(!ghReady(c)){if(manual)ghMsg('Enter your access token first.',1);return false}
+let newGist=false;try{ghMsg('Backing up\u2026');const content=JSON.stringify(exportObj(),null,2);
+if(ghMode(c)==='gist'){let r=null,fresh=false;if(c.gistId){r=await gh(c,'PATCH','/gists/'+c.gistId,{files:{[GFILE]:{content}}});if(r.status===404)r=null}
+if(!r){fresh=!!c.gistId;r=await gh(c,'POST','/gists',{description:"Sister's Tracker backup",public:false,files:{[GFILE]:{content}}})}
+if(!r.ok){ghMsg(await ghErr(r,c),1);return false}c.gistId=(await r.json()).id;$('ghId').value=c.gistId;if(fresh)newGist=true}
+else{let sha;const g=await gh(c,'GET',repoUrl(c,true));if(g.ok)sha=(await g.json()).sha;else if(g.status!==404){ghMsg(await ghErr(g,c),1);return false}
+const body={message:'Backup '+state.currentMonth+' ('+state.entries.length+' entries this month)',content:enc(content),sha};if(c.branch)body.branch=c.branch;
+const p=await gh(c,'PUT',repoUrl(c,false),body);if(!p.ok){ghMsg(await ghErr(p,c),1);return false}}
+c.last=new Date().toISOString();ghSet(c);ghMsg('Last backup: '+new Date(c.last).toLocaleString()+(newGist?' (the old gist was not found, so a new one was created; the Gist ID has changed)':''));return true}catch(e){ghMsg('Could not reach GitHub. Your data is still saved on this device.',1);return false}}
 let ghChain=Promise.resolve(),ghTimer=null;
 function ghQueue(){const c=ghCfg();if(!ghReady(c)||c.auto===false)return;clearTimeout(ghTimer);ghTimer=setTimeout(()=>{ghChain=ghChain.then(()=>ghPush(false))},1200)}
-async function ghRestore(){const c=ghCfg();if(!ghReady(c)){ghMsg('Enter the repository (owner/name) and token first.',1);return}
-try{ghMsg('Fetching\u2026');const g=await ghFetch(c,'GET');if(!g.ok){ghMsg(g.status===404?'No backup file found there yet.':await ghErr(g),1);return}
-const j=await g.json();let res;try{res=normalize(JSON.parse(dec(j.content)),thisMonth())}catch{ghMsg('The file on GitHub is not a valid tracker backup.',1);return}
+async function ghGet(c){if(ghMode(c)==='gist'){const id=c.gistId;if(!id)return{none:1};
+const g=await gh(c,'GET','/gists/'+id);if(!g.ok)return{err:g.status===404?'No gist with that ID was found for this account.':await ghErr(g,c)};const j=await g.json();const f=j.files&&j.files[GFILE];if(!f)return{none:1};return{text:f.truncated?await(await fetch(f.raw_url)).text():f.content}}
+const g=await gh(c,'GET',repoUrl(c,true));if(g.status===404)return{none:1};if(!g.ok)return{err:await ghErr(g,c)};return{text:dec((await g.json()).content)}}
+async function ghRestore(skipAsk){const c=ghRead();if(!ghReady(c)){ghMsg('Enter your access token first.',1);return}
+try{ghMsg('Fetching\u2026');const r=await ghGet(c);if(r.err){ghMsg(r.err,1);return}if(r.none){ghMsg(ghMode(c)==='gist'?'Enter the Gist ID from your other device first.':'No backup found there yet.',1);return}
+let res;try{res=normalize(JSON.parse(r.text),thisMonth())}catch{ghMsg('The file on GitHub is not a valid tracker backup.',1);return}
 const n=res.state.archive.reduce((a,m)=>a+m.entries.length,res.state.entries.length);
-if(!await ask('Replace the data on this device with the GitHub backup ('+monthLabel(res.state.currentMonth)+', '+n+' entries in total)?')){ghMsg('');return}
+if(!skipAsk&&!await ask('Replace the data on this device with the GitHub backup ('+monthLabel(res.state.currentMonth)+', '+n+' entries in total)?')){ghMsg('');return}
 state=res.state;openId=null;localStorage.setItem(KEY,JSON.stringify(state));render();ghMsg('Restored from GitHub.')}catch(e){ghMsg('Could not reach GitHub.',1)}}
-$('ghSave').onclick=()=>{const c={...ghCfg(),repo:$('ghRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/+$/,''),token:$('ghToken').value.trim(),branch:$('ghBranch').value.trim(),path:$('ghPath').value.trim()||'sisters-tracker.json',auto:$('ghAuto').checked};ghSet(c);ghShow();ghChain=ghChain.then(()=>ghPush(true))};
+function ghId(v){return(v||'').trim().split(/[?#]/)[0].replace(/\/+$/,'').split('/').pop()}
+function ghRead(){const c={...ghCfg(),repo:$('ghRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/+$/,''),token:$('ghToken').value.trim(),branch:$('ghBranch').value.trim(),path:$('ghPath').value.trim(),auto:$('ghAuto').checked,gistId:ghId($('ghId').value)};ghSet(c);return c}
+$('ghSave').onclick=async()=>{const old=ghCfg();const c=ghRead();ghShow();if(!ghReady(c)){ghMsg('Enter your access token first.',1);return}
+if(ghMode(c)==='gist'&&c.gistId&&c.gistId!==old.gistId){try{ghMsg('Checking GitHub\u2026');const g=await gh(c,'GET','/gists/'+c.gistId);if(!g.ok){ghMsg(g.status===404?'No gist with that ID was found for this account.':await ghErr(g,c),1);return}
+const j=await g.json();if(!(j.files&&j.files[GFILE])){ghMsg('That gist does not contain a tracker backup.',1);return}
+if(await ask('Found a backup (last updated '+new Date(j.updated_at).toLocaleString()+'). Load it onto this device? Choose \u201cKeep this device\u2019s data\u201d to replace that backup with what is on this device.',false,'Load backup','Keep this device\u2019s data')){await ghRestore(true);return}}catch{ghMsg('Could not reach GitHub.',1);return}}
+ghChain=ghChain.then(()=>ghPush(true))};
+$('ghCopy').onclick=async()=>{const v=$('ghId').value.trim();if(!v){ghMsg('There is no Gist ID yet. Tap Save & back up now first.',1);return}let ok=false;try{await navigator.clipboard.writeText(v);ok=true}catch{try{$('ghId').select();ok=document.execCommand('copy')}catch{}}ghMsg(ok?'Gist ID copied.':'Could not copy automatically. Press and hold the ID field to copy it.',!ok)};
 $('ghAuto').onchange=()=>{const c=ghCfg();c.auto=$('ghAuto').checked;ghSet(c);ghShow()};
-$('ghRestore').onclick=ghRestore;
-$('ghOff').onclick=async()=>{if(await ask('Remove the saved repository and token from this device? Your backups on GitHub are not touched.')){localStorage.removeItem(GH_KEY);ghMsg('');ghShow()}};
+$('ghRestore').onclick=()=>ghRestore(false);
+$('ghOff').onclick=async()=>{if(await ask('Remove the saved token from this device? Your backups on GitHub are not touched.')){localStorage.removeItem(GH_KEY);ghMsg('');ghShow()}};
 ghShow();
 date.value=localDate();render();
 </script></body></html>
